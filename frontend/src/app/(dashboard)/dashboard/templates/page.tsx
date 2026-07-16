@@ -69,10 +69,8 @@ export default function TemplatesPage() {
           <p className="text-gray-500 dark:text-gray-400 mt-1">Select or create formatting templates for your documents.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Create Custom Template
-            </Button>
+          <DialogTrigger render={<Button />}>
+            <Plus className="mr-2 h-4 w-4" /> Create Custom Template
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
