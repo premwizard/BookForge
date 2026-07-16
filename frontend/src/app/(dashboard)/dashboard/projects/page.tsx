@@ -175,11 +175,11 @@ export default function ProjectsPage() {
                     <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger render={
                       <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
+                    } />
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => favoriteMutation.mutate(project.id)}>
                         <Star className={`h-4 w-4 mr-2 ${project.favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} /> 
@@ -257,11 +257,11 @@ export default function ProjectsPage() {
                   <td className="px-4 py-3 text-gray-500">{new Date(project.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3 text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger render={
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
-                      </DropdownMenuTrigger>
+                      } />
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => favoriteMutation.mutate(project.id)}>
                           {project.favorite ? 'Unfavorite' : 'Favorite'}
