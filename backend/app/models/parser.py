@@ -39,7 +39,8 @@ class ParsedElement(Base):
     attributes = Column(JSONB, nullable=True, default={})
     
     # Self-referential relationship for tree structure
-    children = relationship("ParsedElement", backref="parent", remote_side=[id], cascade="all, delete-orphan")
+    parent = relationship("ParsedElement", back_populates="children", remote_side=[id])
+    children = relationship("ParsedElement", back_populates="parent", cascade="all, delete-orphan")
     parsed_document = relationship("ParsedDocument", back_populates="elements")
 
 class DocumentImage(Base):

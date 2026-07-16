@@ -1,0 +1,3 @@
+DEBUG: username='admin@bookforge.com', password_len=8, password='admin123'
+DEBUG: username='admin@bookforge.com', password_len=8, password='admin123'
+DEBUG: username='admin@bookforge.com', password_len=8, password='admin123'
