@@ -15,13 +15,7 @@ class FormattingJob(Base):
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
-class ValidationReport(Base):
-    __tablename__ = "validation_reports"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    job_id = Column(UUID(as_uuid=True), ForeignKey("formatting_jobs.id", ondelete="CASCADE"), nullable=False, unique=True)
-    issues = Column(JSONB, nullable=True)
-    score = Column(Integer, default=100)
+
 
 class Export(Base):
     __tablename__ = "exports"

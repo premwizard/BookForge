@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 from app.workers.celery_app import celery_app
 from app.database.session import SessionLocal
 from app.models.document_template import Document, UploadLog
-from app.models.jobs import FormattingJob, ValidationReport, Export
+from app.models.jobs import FormattingJob, Export
 import hashlib
 from app.ocr.service import OCRService
 from app.ai.service import AIAnalysisService
@@ -143,13 +143,6 @@ def process_document(document_id: str):
         logger.info("Validating formatting...")
         validator = ValidationEngine()
         report_data = validator.validate_formatting(formatted_bytes, formatter.settings)
-        
-        validation_report = ValidationReport(
-            job_id=job.id,
-            issues=report_data["issues"],
-            score=report_data["score"]
-        )
-        db.add(validation_report)
         
         # 6. Save Export
         # export_path = upload_file_to_minio(...)
