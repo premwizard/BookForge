@@ -1,8 +1,8 @@
-from pydantic import BaseModel, ConfigDict, Field, UUID4
+from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from uuid import UUID
 from datetime import datetime
 
-# Publishers
 class PublisherBase(BaseModel):
     name: str
     contact_email: Optional[str] = None
@@ -12,83 +12,93 @@ class PublisherCreate(PublisherBase):
     pass
 
 class Publisher(PublisherBase):
-    id: UUID4
+    id: UUID
     created_at: datetime
     updated_at: datetime
+    class Config:
+        orm_mode = True
 
-    model_config = ConfigDict(from_attributes=True)
-
-# Templates
 class TemplateBase(BaseModel):
     name: str
     description: Optional[str] = None
     category: Optional[str] = None
-    is_active: bool = True
-    is_default: bool = False
+    is_active: Optional[bool] = True
+    is_default: Optional[bool] = False
 
 class TemplateCreate(TemplateBase):
-    publisher_id: Optional[UUID4] = None
+    publisher_id: Optional[UUID] = None
 
 class TemplateUpdate(TemplateBase):
     name: Optional[str] = None
-    is_active: Optional[bool] = None
 
 class Template(TemplateBase):
-    id: UUID4
-    publisher_id: Optional[UUID4] = None
-    user_id: Optional[UUID4] = None
+    id: UUID
+    publisher_id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
+    class Config:
+        orm_mode = True
 
-    model_config = ConfigDict(from_attributes=True)
+class BlueprintBase(BaseModel):
+    name: str
 
-# Template Versions
-class TemplateVersionBase(BaseModel):
-    version_number: int
-    file_type: str
+class BlueprintCreate(BlueprintBase):
+    template_id: UUID
+    publisher_id: Optional[UUID] = None
 
-class TemplateVersion(TemplateVersionBase):
-    id: UUID4
-    template_id: UUID4
-    storage_path: str
+class Blueprint(BlueprintBase):
+    id: UUID
+    template_id: UUID
+    publisher_id: Optional[UUID] = None
     created_at: datetime
+    class Config:
+        orm_mode = True
 
-    model_config = ConfigDict(from_attributes=True)
+class BlueprintVersionBase(BaseModel):
+    version_number: int
+    blueprint_json: Dict[str, Any]
 
-# Template Styles
-class TemplateStyleBase(BaseModel):
-    style_name: str
-    style_type: str
-    properties_json: Dict[str, Any]
+class BlueprintVersionCreate(BlueprintVersionBase):
+    blueprint_id: UUID
 
-class TemplateStyle(TemplateStyleBase):
-    id: UUID4
-    template_version_id: UUID4
+class BlueprintVersion(BlueprintVersionBase):
+    id: UUID
+    blueprint_id: UUID
+    created_at: datetime
+    class Config:
+        orm_mode = True
 
-    model_config = ConfigDict(from_attributes=True)
+class MappingProfileBase(BaseModel):
+    name: str
+    book_type: Optional[str] = None
+    is_default: Optional[bool] = False
 
-# Formatting Rules
-class FormattingRuleBase(BaseModel):
-    rule_type: str
-    rule_data: Dict[str, Any]
+class MappingProfileCreate(MappingProfileBase):
+    publisher_id: UUID
+    blueprint_version_id: UUID
 
-class FormattingRule(FormattingRuleBase):
-    id: UUID4
-    template_version_id: UUID4
+class MappingProfile(MappingProfileBase):
+    id: UUID
+    publisher_id: UUID
+    blueprint_version_id: UUID
+    created_at: datetime
+    class Config:
+        orm_mode = True
 
-    model_config = ConfigDict(from_attributes=True)
-
-# Style Mappings
 class StyleMappingBase(BaseModel):
     raw_element_type: str
-    is_override: bool = False
+    blueprint_style_id: UUID
+    confidence: Optional[int] = None
+    is_ai_suggested: Optional[bool] = False
+    ai_reason: Optional[str] = None
+    is_approved: Optional[bool] = False
 
 class StyleMappingCreate(StyleMappingBase):
-    template_style_id: UUID4
+    mapping_profile_id: UUID
 
 class StyleMapping(StyleMappingBase):
-    id: UUID4
-    template_version_id: UUID4
-    template_style_id: UUID4
-
-    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    mapping_profile_id: UUID
+    class Config:
+        orm_mode = True

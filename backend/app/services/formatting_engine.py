@@ -3,28 +3,25 @@ import os
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.parser import ParsedDocument, ParsedElement, DocumentTable, DocumentImage
-from app.models.template import TemplateVersion, StyleMapping
+from app.models.template import MappingProfile, StyleMapping
 
 class FormattingEngine:
-    def __init__(self, db: Session, parsed_doc_id: UUID, template_version_id: UUID):
+    def __init__(self, db: Session, document_id: UUID, mapping_profile_id: UUID):
         self.db = db
-        self.parsed_doc_id = parsed_doc_id
-        self.template_version_id = template_version_id
+        self.document = db.query(ParsedDocument).filter(ParsedDocument.id == document_id).first()
+        self.mapping_profile = db.query(MappingProfile).filter(MappingProfile.id == mapping_profile_id).first()
         
-        self.parsed_doc = db.query(ParsedDocument).filter(ParsedDocument.id == parsed_doc_id).first()
-        self.template_version = db.query(TemplateVersion).filter(TemplateVersion.id == template_version_id).first()
-        
-        if not self.parsed_doc or not self.template_version:
-            raise ValueError("Invalid ParsedDocument or TemplateVersion")
+        if not self.document or not self.mapping_profile:
+            raise ValueError("Invalid ParsedDocument or MappingProfile")
             
         # Load style mappings
         self.mappings = {}
-        mappings_db = db.query(StyleMapping).filter(StyleMapping.template_version_id == template_version_id).all()
+        mappings_db = db.query(StyleMapping).filter(StyleMapping.mapping_profile_id == mapping_profile_id).all()
         for mapping in mappings_db:
             self.mappings[mapping.raw_element_type] = mapping.template_style.style_name
             
         # Initialize output document based on the base template
-        self.doc = docx.Document(self.template_version.storage_path)
+        self.doc = docx.Document(self.mapping_profile.blueprint_version.blueprint.template.storage_path)
         # Clear existing paragraphs if any in the base template, but preserve styles
         for paragraph in self.doc.paragraphs:
             p = paragraph._element

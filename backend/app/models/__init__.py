@@ -1,7 +1,8 @@
 from .user import User
 from .project import Project
 from .document_template import Document
-from .template import Publisher, Template, TemplateVersion, TemplateStyle, FormattingRule, StyleMapping, TemplateAuditLog
+from .parser import ParsedDocument, ParsedElement, DocumentImage, DocumentTable, DocumentMetadata
+from .template import Publisher, Template, Blueprint, BlueprintVersion, BlueprintStyle, BlueprintLayout, BlueprintRule, MappingProfile, StyleMapping, MappingHistory, TemplateAuditLog
 from .jobs import FormattingJob
 from .ai import Provider, PromptVersion, AIJob, AIResult, AIToken, AIUsage, DocumentInsight
 from .validation import ValidationRule, ValidationRun, ValidationResult, ValidationHistory, QualityScore
