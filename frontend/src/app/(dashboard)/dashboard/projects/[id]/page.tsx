@@ -119,6 +119,11 @@ export default function ProjectDetailsPage() {
                             <ClipboardCheck className="mr-2 h-4 w-4" /> QA
                           </Button>
                         </Link>
+                        <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/export`} className="w-full">
+                          <Button size="sm" variant="secondary" className="w-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <Download className="mr-2 h-4 w-4" /> Export
+                          </Button>
+                        </Link>
                       </>
                     )}
                   </div>
