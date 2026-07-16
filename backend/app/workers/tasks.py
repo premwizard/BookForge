@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 from app.workers.celery_app import celery_app
 from app.database.session import SessionLocal
 from app.models.document_template import Document, UploadLog
-from app.models.jobs import FormattingJob, Export
+from app.models.jobs import FormattingJob
 import hashlib
 from app.ocr.service import OCRService
 from app.ai.service import AIAnalysisService
@@ -144,14 +144,7 @@ def process_document(document_id: str):
         validator = ValidationEngine()
         report_data = validator.validate_formatting(formatted_bytes, formatter.settings)
         
-        # 6. Save Export
-        # export_path = upload_file_to_minio(...)
-        export = Export(
-            job_id=job.id,
-            format="DOCX",
-            storage_path="s3://bookforge/exports/dummy.docx"
-        )
-        db.add(export)
+        # 6. Save Export is now delegated to Export Engine
         
         job.status = "Completed"
         document.status = "Formatted"

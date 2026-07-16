@@ -17,10 +17,4 @@ class FormattingJob(Base):
 
 
 
-class Export(Base):
-    __tablename__ = "exports"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    job_id = Column(UUID(as_uuid=True), ForeignKey("formatting_jobs.id", ondelete="CASCADE"), nullable=False)
-    format = Column(String, nullable=False) # DOCX, PDF, EPUB, HTML
-    storage_path = Column(String, nullable=False)
+
