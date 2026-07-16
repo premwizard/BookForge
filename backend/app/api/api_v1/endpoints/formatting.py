@@ -1,0 +1,45 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import Any
+from uuid import UUID
+
+from app.api import deps
+from app.models import User
+from app.models.parser import ParsedDocument
+from app.models.template import TemplateVersion
+
+router = APIRouter()
+
+@router.post("/{document_id}/format")
+def format_document(
+    *,
+    db: Session = Depends(deps.get_db),
+    document_id: UUID,
+    template_version_id: UUID,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Dispatch a background Celery task to format the ParsedDocument using a specific TemplateVersion.
+    """
+    # 1. Validate ParsedDocument exists
+    parsed_doc = db.query(ParsedDocument).filter(ParsedDocument.document_id == document_id).first()
+    if not parsed_doc:
+        raise HTTPException(status_code=404, detail="Parsed document not found")
+
+    # 2. Validate TemplateVersion exists
+    template_ver = db.query(TemplateVersion).filter(TemplateVersion.id == template_version_id).first()
+    if not template_ver:
+        raise HTTPException(status_code=404, detail="Template version not found")
+
+    # 3. Create a FormattingJob (assuming a FormattingJob model exists or will be updated)
+    from app.models.jobs import FormattingJob
+    job = FormattingJob(document_id=document_id, template_id=template_ver.template_id, status="Queued")
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    # 4. Dispatch Celery Task
+    from app.workers.formatting_tasks import format_document_task
+    format_document_task.delay(str(job.id), str(parsed_doc.id), str(template_version_id))
+
+    return {"message": "Formatting job queued successfully.", "job_id": job.id, "document_id": document_id, "template_version_id": template_version_id}

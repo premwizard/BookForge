@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FolderPlus, BookOpen, Clock, MoreVertical, Search, Loader2, LayoutGrid, List as ListIcon, Star, Trash2 } from "lucide-react";
+import { FolderPlus, BookOpen, Clock, MoreVertical, Search, Loader2, LayoutGrid, List as ListIcon, Star, Trash2, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useInView } from "react-intersection-observer";
@@ -158,6 +158,15 @@ export default function ProjectsPage() {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card 
+            className="border-dashed border-2 border-gray-300 dark:border-zinc-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors cursor-pointer flex flex-col items-center justify-center p-6 min-h-[200px] group"
+            onClick={() => setIsCreating(true)}
+          >
+            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 mb-4 transition-colors">
+              <FolderPlus className="h-8 w-8 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+            </div>
+            <span className="text-gray-700 dark:text-gray-300 font-medium">Upload Project</span>
+          </Card>
           {projects.map((project: any) => (
             <Card key={project.id} className="hover:border-blue-500 transition-colors cursor-pointer group">
               <CardHeader className="pb-4">
@@ -192,7 +201,7 @@ export default function ProjectsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center text-sm mb-4">
                   <span className="text-gray-500 dark:text-gray-400">Docs: {project.total_documents || 0}</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     project.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
@@ -202,6 +211,16 @@ export default function ProjectsPage() {
                     {project.status}
                   </span>
                 </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-2 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // TODO: Open upload document modal
+                  }}
+                >
+                  <Upload className="h-4 w-4 mr-2" /> Upload Document
+                </Button>
               </CardContent>
             </Card>
           ))}
