@@ -6,3 +6,7 @@ from .jobs import FormattingJob
 from .ai import Provider, PromptVersion, AIJob, AIResult, AIToken, AIUsage, DocumentInsight
 from .validation import ValidationRule, ValidationRun, ValidationResult, ValidationHistory, QualityScore
 from .export import Export, ExportJob, ExportVersion, DownloadHistory
+from .workflow import WorkflowTemplate, WorkflowState, WorkflowTransition, DocumentWorkflowStatus, Approval
+from .collaboration import Comment, Annotation, Task, DocumentLock
+from .versioning import DocumentVersion, VersionComparison
+from .audit import ActivityLog, Notification

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, Download, CheckCircle2, AlertCircle, FilePlus2, Play, Edit3, Network, BrainCircuit, ClipboardCheck } from "lucide-react";
+import { FileText, Upload, Download, CheckCircle2, AlertCircle, FilePlus2, Play, Edit3, Network, BrainCircuit, ClipboardCheck, Users } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DocumentEditor from "@/components/DocumentEditor";
 import UploadDropzone from "@/components/UploadDropzone";
@@ -112,6 +112,11 @@ export default function ProjectDetailsPage() {
                         <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/ai`} className="w-full">
                           <Button size="sm" variant="secondary" className="w-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400">
                             <BrainCircuit className="mr-2 h-4 w-4" /> AI
+                          </Button>
+                        </Link>
+                        <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/review`} className="w-full">
+                          <Button size="sm" variant="secondary" className="w-full bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400">
+                            <Users className="mr-2 h-4 w-4" /> Review
                           </Button>
                         </Link>
                         <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/validation`} className="w-full">

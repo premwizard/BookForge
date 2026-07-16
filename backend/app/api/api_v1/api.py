@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.api_v1.endpoints import auth, projects, documents, parser, billing, templates, formatting, ai, validation, export
+from app.api.api_v1.endpoints import auth, projects, documents, parser, billing, templates, formatting, ai, validation, export, workflow, collaboration, versions
 
 api_router = APIRouter()
 
@@ -13,3 +13,6 @@ api_router.include_router(formatting.router, prefix="/formatting", tags=["format
 api_router.include_router(ai.router, prefix="/documents", tags=["ai"])
 api_router.include_router(validation.router, prefix="/documents", tags=["validation"])
 api_router.include_router(export.router, prefix="/documents", tags=["export"])
+api_router.include_router(workflow.router, prefix="/workflow", tags=["workflow"])
+api_router.include_router(collaboration.router, prefix="/collaboration", tags=["collaboration"])
+api_router.include_router(versions.router, prefix="/versions", tags=["versions"])
