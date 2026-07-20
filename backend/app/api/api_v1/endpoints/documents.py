@@ -1,20 +1,21 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from uuid import UUID
 import os
+import tempfile
 
 from app.api import deps
 from app.models.document_template import Document
 from app.models.project import Project
 from app.models.user import User
 from app.schemas.document import DocumentResponse
-from app.storage.minio_client import upload_file_to_minio
+from app.storage.minio_client import upload_file_to_minio, minio_client, bucket_name, ensure_bucket_exists
 from app.workers.tasks import process_document
 
 router = APIRouter()
 
-@router.post("/upload", response_model=DocumentResponse)
+@router.post("/upload", response_model=Union[DocumentResponse, dict])
 async def upload_document(
     *,
     db: Session = Depends(deps.get_db),
@@ -39,32 +40,42 @@ async def upload_document(
     
     # If chunking parameters are provided, handle chunking
     if chunk_index is not None and total_chunks is not None:
-        chunk_path = f"/tmp/{file.filename}.part{chunk_index}"
+        temp_dir = tempfile.gettempdir()
+        chunk_path = os.path.join(temp_dir, f"{file.filename}.part{chunk_index}")
         with open(chunk_path, "wb") as buffer:
             buffer.write(await file.read())
             
         if chunk_index == total_chunks - 1:
-            # Reassemble file in this naive implementation
-            final_path = f"/tmp/{file.filename}"
+            # Reassemble file
+            final_path = os.path.join(temp_dir, file.filename)
             with open(final_path, "wb") as outfile:
                 for i in range(total_chunks):
-                    part_path = f"/tmp/{file.filename}.part{i}"
+                    part_path = os.path.join(temp_dir, f"{file.filename}.part{i}")
                     with open(part_path, "rb") as infile:
                         outfile.write(infile.read())
-                    os.remove(part_path)
+                    try:
+                        os.remove(part_path)
+                    except OSError:
+                        pass
             
-            # Pretend we uploaded `final_path` to MinIO
-            storage_path = object_name
-            os.remove(final_path)
+            # Upload final file to MinIO
+            ensure_bucket_exists()
+            minio_client.fput_object(bucket_name, object_name, final_path)
+            storage_path = f"s3://{bucket_name}/{object_name}"
+            
+            file_size = os.path.getsize(final_path)
+            
+            try:
+                os.remove(final_path)
+            except OSError:
+                pass
         else:
             return {"filename": file.filename, "status": "Chunk Uploaded"}
     else:
         # Standard upload
         storage_path = upload_file_to_minio(file, object_name)
-
-    # Calculate file size (mock)
-    file.file.seek(0, os.SEEK_END)
-    file_size = file.file.tell()
+        file.file.seek(0, os.SEEK_END)
+        file_size = file.file.tell()
 
     document = Document(
         project_id=project_id,
