@@ -106,13 +106,14 @@ export default function EditorTopToolbar({
         </select>
 
         <select 
+          defaultValue="12"
           onChange={(e) => onFormat("fontSize", e.target.value)}
           className="px-2 py-1 rounded bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-800 dark:text-gray-200 font-medium w-16"
         >
           <option value="9">9 pt</option>
           <option value="10">10 pt</option>
           <option value="11">11 pt</option>
-          <option value="12" selected>12 pt</option>
+          <option value="12">12 pt</option>
           <option value="14">14 pt</option>
           <option value="16">16 pt</option>
           <option value="18">18 pt</option>
