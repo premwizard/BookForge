@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.api_v1.endpoints import auth, projects, documents, parser, billing, blueprints, mapping, formatting, ai, validation, export, workflows, collaboration, versions, transformations, layout, rendering, review, generation, editor, audit, localization, audio, prepress, ereader
+from app.api.api_v1.endpoints import auth, projects, documents, parser, billing, blueprints, mapping, formatting, ai, validation, export, workflows, collaboration, versions, transformations, layout, rendering, review, generation, editor, audit, localization, audio, prepress, ereader, batch
 
 api_router = APIRouter()
 
@@ -28,9 +28,4 @@ api_router.include_router(localization.router, prefix="/localization", tags=["lo
 api_router.include_router(audio.router, prefix="/audio", tags=["audio"])
 api_router.include_router(prepress.router, prefix="/prepress", tags=["prepress"])
 api_router.include_router(ereader.router, prefix="/ereader", tags=["ereader"])
-
-
-
-
-
-
+api_router.include_router(batch.router, prefix="/batch", tags=["batch"])

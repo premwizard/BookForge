@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-import { BookOpen, FolderOpen, LayoutDashboard, Settings, LogOut, FileText, Workflow, Edit3, Download, Sparkles, Globe, Radio, Palette, Tablet } from "lucide-react";
+import { BookOpen, FolderOpen, LayoutDashboard, Settings, LogOut, FileText, Workflow, Edit3, Download, Sparkles, Globe, Radio, Palette, Tablet, Archive } from "lucide-react";
 import { useEffect } from "react";
 
 const sidebarLinks = [
@@ -12,6 +12,7 @@ const sidebarLinks = [
   { href: "/dashboard/editor", label: "Visual Editor", icon: Edit3 },
   { href: "/dashboard/export", label: "Export & Releases", icon: Download },
   { href: "/dashboard/ai", label: "AI Copilot", icon: Sparkles },
+  { href: "/dashboard/batch", label: "Batch Ingestion", icon: Archive },
   { href: "/dashboard/prepress", label: "Pre-Press & Colors", icon: Palette },
   { href: "/dashboard/ereader", label: "E-Reader Studio", icon: Tablet },
   { href: "/dashboard/audio", label: "AudioBook Studio", icon: Radio },
