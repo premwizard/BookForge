@@ -12,6 +12,8 @@ if /i "%TARGET%"=="dev-frontend" goto :dev_frontend
 if /i "%TARGET%"=="worker" goto :worker
 if /i "%TARGET%"=="test" goto :test
 if /i "%TARGET%"=="build" goto :build
+if /i "%TARGET%"=="docker-up" goto :docker_up
+if /i "%TARGET%"=="docker-down" goto :docker_down
 if /i "%TARGET%"=="db-setup" goto :db_setup
 if /i "%TARGET%"=="clean" goto :clean
 
@@ -33,6 +35,8 @@ echo   dev-frontend - Start Next.js frontend dev server [next]
 echo   worker       - Start Celery worker for workflow orchestration
 echo   test         - Run backend tests and frontend type checks
 echo   build        - Build production bundle for frontend
+echo   docker-up    - Start multi-container production stack with docker-compose
+echo   docker-down  - Stop multi-container production stack
 echo   db-setup     - Initialize PostgreSQL database and user
 echo   clean        - Remove Python cache files
 echo =====================================================================
@@ -80,6 +84,16 @@ exit /b 0
 :build
 echo Building frontend...
 cd /d "%~dp0frontend" && npm run build
+exit /b %errorlevel%
+
+:docker_up
+echo Starting multi-container production stack with docker-compose...
+docker-compose up -d --build
+exit /b %errorlevel%
+
+:docker_down
+echo Stopping multi-container production stack...
+docker-compose down
 exit /b %errorlevel%
 
 :db_setup

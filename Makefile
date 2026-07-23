@@ -12,6 +12,8 @@ help:
 	@echo "  make worker       - Start Celery worker for workflow orchestration"
 	@echo "  make test         - Run backend tests and frontend type checks"
 	@echo "  make build        - Build production bundle for frontend"
+	@echo "  make docker-up    - Start multi-container production stack with docker-compose"
+	@echo "  make docker-down  - Stop multi-container production stack"
 	@echo "  make db-setup     - Initialize PostgreSQL database and user"
 	@echo "  make clean        - Remove cache, temp files, and build artifacts"
 	@echo "====================================================================="
@@ -41,6 +43,12 @@ test:
 
 build:
 	cd frontend && npm run build
+
+docker-up:
+	docker-compose up -d --build
+
+docker-down:
+	docker-compose down
 
 db-setup:
 	cd backend && python setup_db.py

@@ -2,42 +2,67 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
-    container_name: bookforge_db
+    image: postgres:15-alpine
+    container_name: docforge_db
+    restart: always
     environment:
-      POSTGRES_USER: bookforge_user
-      POSTGRES_PASSWORD: bookforge_password
-      POSTGRES_DB: bookforge
+      POSTGRES_USER: docforge_user
+      POSTGRES_PASSWORD: docforge_password
+      POSTGRES_DB: docforge_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
 
   redis:
-    image: redis:7
-    container_name: bookforge_redis
+    image: redis:7-alpine
+    container_name: docforge_redis
+    restart: always
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
 
-  minio:
-    image: minio/minio
-    container_name: bookforge_minio
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
-    command: server /data --console-address ":9001"
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: docforge_backend
+    restart: always
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-    restart: unless-stopped
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://docforge_user:docforge_password@db:5432/docforge_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=production_docforge_secret_key_change_in_prod
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: docforge_celery_worker
+    restart: always
+    command: celery -A app.workers.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://docforge_user:docforge_password@db:5432/docforge_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: docforge_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
-  redis_data:
-  minio_data:
