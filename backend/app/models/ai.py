@@ -85,5 +85,21 @@ class DocumentInsight(Base):
     reference_analysis = Column(JSONB, nullable=True)
     style_suggestions = Column(JSONB, nullable=True)
     quality_scores = Column(JSONB, nullable=True)
+    low_confidence_regions = Column(JSONB, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class AISuggestion(Base):
+    __tablename__ = "ai_suggestions"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    suggestion_type = Column(String, nullable=False) # TYPOGRAPHY, FORMATTING, MARGIN, DROP_CAP, LAYOUT_RULE
+    target_element_id = Column(String, nullable=False)
+    original_state = Column(JSONB, nullable=True)
+    proposed_state = Column(JSONB, nullable=False)
+    confidence = Column(Integer, default=90) # 0-100
+    status = Column(String, default="PENDING") # PENDING, ACCEPTED, REJECTED
+    ai_reason = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+

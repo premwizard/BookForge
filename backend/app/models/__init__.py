@@ -16,3 +16,5 @@ from .layout import LayoutJob, LayoutDocument, LayoutPage, LayoutSection, Layout
 from .rendering import RenderingJob, RenderedDocument, PackageVersion, RenderingHistory, RenderingLog
 from .review import ReviewSession, Correction, ReviewSnapshot, ReviewApproval, ReviewLog
 from .rules import RuleSet, Rule, RuleVersion, RulePackage, RuleExecution, RuleLog, RuleVariable, RuleTemplate, RuleState, RuleCategory
+from .editor import EditorSession, EditorHistory, CursorPosition, EditorSelection, EditorSnapshot, FormattingChange
+

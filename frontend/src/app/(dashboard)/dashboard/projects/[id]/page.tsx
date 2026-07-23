@@ -1,210 +1,208 @@
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, Download, CheckCircle2, AlertCircle, FilePlus2, Play, Edit3, Network, BrainCircuit, ClipboardCheck, Users } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import DocumentEditor from "@/components/DocumentEditor";
-import UploadDropzone from "@/components/UploadDropzone";
+import React, { useState } from "react";
+import DocumentUploadModal from "@/components/projects/DocumentUploadModal";
+import { 
+  BookOpen, FolderOpen, ArrowLeft, Upload, Edit3, CheckCircle2, 
+  Users, Milestone, FileText, Download, Play, RefreshCw, Star, Trash2
+} from "lucide-react";
 import Link from "next/link";
 
-export default function ProjectDetailsPage() {
-  const queryClient = useQueryClient();
-  const params = useParams();
-  const projectId = params?.id as string;
-  const [isUploading, setIsUploading] = useState(false);
+export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const [activeTab, setActiveTab] = useState<"documents" | "members" | "milestones">("documents");
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  // Mock document data
-  const { data: documents } = useQuery({
-    queryKey: ["documents", projectId],
-    queryFn: async () => {
-      return [
-        { id: "d1", filename: "chapter_1_draft.pdf", status: "Formatted", uploaded_at: "2026-07-16T10:05:00Z" },
-        { id: "d2", filename: "introduction.docx", status: "Uploaded", uploaded_at: "2026-07-16T10:15:00Z" }
-      ];
-    }
-  });
+  const [documents, setDocuments] = useState([
+    { id: "doc-1", name: "Chapter 1: Executive Overview & Pipeline Architecture", filename: "chapter1_arch.docx", pages: 12, status: "Completed", date: "10:45 AM" },
+    { id: "doc-2", name: "Chapter 2: Quantum Mechanical Document Layouts", filename: "chapter2_quantum.docx", pages: 16, status: "Formatting", date: "10:30 AM" },
+    { id: "doc-3", name: "Chapter 3: Multi-Format Rendering & Archival PDF/A", filename: "chapter3_pdfa.docx", pages: 14, status: "Parsed", date: "Yesterday" }
+  ]);
 
-  // Mock Validation Report
-  const report = {
-    score: 95,
-    issues: [
-      "Margin overflow on page 12.",
-      "Missing figure caption for Figure 1.3"
-    ]
+  const [members, setMembers] = useState([
+    { name: "Dr. Aris Thorne", email: "aris@docforge.com", role: "OWNER", status: "Active" },
+    { name: "Elena Vance", email: "elena@publisher.com", role: "MANAGING_EDITOR", status: "Active" },
+    { name: "Marcus Brody", email: "marcus@layout.org", role: "LAYOUT_ARCHITECT", status: "Active" }
+  ]);
+
+  const [milestones, setMilestones] = useState([
+    { tag: "v2.0-final-press", date: "Today 11:00 AM", notes: "Final Press Release Candidate for print submission.", author: "Dr. Aris Thorne" },
+    { tag: "v1.5-editorial", date: "Yesterday 4:30 PM", notes: "Peer review proofing completed with 0 errors.", author: "Elena Vance" },
+    { tag: "v1.0-draft", date: "Jul 20, 2026", notes: "Initial manuscript ingestion.", author: "Dr. Aris Thorne" }
+  ]);
+
+  const handleUploadSuccess = (newDoc: any) => {
+    setDocuments([newDoc, ...documents]);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Project Details</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage documents and view formatting reports.</p>
+    <div className="space-y-6 text-xs">
+      {/* Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-950 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
+        <div className="space-y-1">
+          <Link href="/dashboard/projects" className="inline-flex items-center font-semibold text-blue-600 hover:underline mb-1">
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back to Projects Directory
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+            <BookOpen className="h-7 w-7 text-blue-600 dark:text-blue-400 mr-2" />
+            Quantum Publishing Architecture Volume 1
+          </h1>
+          <p className="text-gray-500">Academic Science Journal • ISBN: 978-0-123456-78-9 • Category: Academic & Technical</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" /> Export All
-          </Button>
-          <Button onClick={() => setIsUploading(!isUploading)}>
-            <Upload className="mr-2 h-4 w-4" /> Upload Document
-          </Button>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow flex items-center space-x-1.5"
+          >
+            <Upload className="h-4 w-4" />
+            <span>Upload Manuscript</span>
+          </button>
         </div>
       </div>
 
-      {isUploading && (
-        <UploadDropzone 
-          projectId={projectId} 
-          onClose={() => setIsUploading(false)} 
-          onUploadSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
-          }} 
-        />
-      )}
+      {/* Project Telemetry Metrics Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 space-y-1">
+          <div className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">Pipeline Progress</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">85% Complete</div>
+          <div className="w-full bg-gray-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden mt-1">
+            <div className="bg-blue-600 h-full w-[85%]"></div>
+          </div>
+        </div>
 
-      <Tabs defaultValue="documents" className="w-full">
-        <TabsList>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="editor">Live Editor</TabsTrigger>
-          <TabsTrigger value="validation">Validation Report</TabsTrigger>
-          <TabsTrigger value="exports">Exports</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="documents" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {documents?.map((doc: any) => (
-              <Card key={doc.id}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-medium flex items-center">
-                    <FileText className="mr-2 h-4 w-4 text-blue-500" />
-                    {doc.filename}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Status</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      doc.status === 'Formatted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                      'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                    }`}>
-                      {doc.status}
-                    </span>
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 space-y-1">
+          <div className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">Active Manuscripts</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{documents.length} Chapters</div>
+          <div className="text-gray-400 text-[10px]">42 Total Pages</div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 space-y-1">
+          <div className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">Team Collaborators</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{members.length} Members</div>
+          <div className="text-emerald-600 font-semibold text-[10px]">✓ Active Team RBAC</div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 space-y-1">
+          <div className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">Latest Release Milestone</div>
+          <div className="text-base font-bold text-purple-600 dark:text-purple-400 font-mono">v2.0-final-press</div>
+          <div className="text-gray-400 text-[10px]">Tagged Today 11:00 AM</div>
+        </div>
+      </div>
+
+      {/* Tabs Header */}
+      <div className="flex items-center space-x-2 border-b border-gray-200 dark:border-zinc-800 pb-1">
+        <button
+          onClick={() => setActiveTab("documents")}
+          className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center space-x-1.5 ${
+            activeTab === "documents"
+              ? "bg-blue-600 text-white shadow"
+              : "bg-white dark:bg-zinc-950 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900"
+          }`}
+        >
+          <FileText className="h-4 w-4" />
+          <span>Manuscript Documents ({documents.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("members")}
+          className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center space-x-1.5 ${
+            activeTab === "members"
+              ? "bg-blue-600 text-white shadow"
+              : "bg-white dark:bg-zinc-950 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900"
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          <span>Collaborators & Team</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("milestones")}
+          className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center space-x-1.5 ${
+            activeTab === "milestones"
+              ? "bg-blue-600 text-white shadow"
+              : "bg-white dark:bg-zinc-950 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900"
+          }`}
+        >
+          <Milestone className="h-4 w-4" />
+          <span>Release Milestones</span>
+        </button>
+      </div>
+
+      {/* Tab 1: Documents List */}
+      {activeTab === "documents" && (
+        <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-3">
+          <div className="flex items-center justify-between border-b pb-3 dark:border-zinc-800">
+            <h3 className="font-bold text-gray-900 dark:text-white uppercase tracking-wider">Manuscript Documents Pipeline</h3>
+            <button onClick={() => setIsUploadOpen(true)} className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold flex items-center">
+              <Upload className="h-3.5 w-3.5 mr-1" /> Ingest New Document
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {documents.map(doc => (
+              <div key={doc.id} className="p-4 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 flex items-center justify-between gap-4 hover:border-blue-500 transition-all">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2.5 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-lg font-bold">
+                    DOC
                   </div>
-                  <div className="mt-4 flex gap-2">
-                    {doc.status === 'Uploaded' && (
-                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                        <Play className="mr-2 h-4 w-4" /> Process Now
-                      </Button>
-                    )}
-                    {doc.status === 'Formatted' && (
-                      <>
-                        <Button size="sm" variant="outline" className="w-full">
-                          <Edit3 className="mr-2 h-4 w-4" /> Edit
-                        </Button>
-                        <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/structure`} className="w-full">
-                          <Button size="sm" variant="secondary" className="w-full">
-                            <Network className="mr-2 h-4 w-4" /> DOM
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/ai`} className="w-full">
-                          <Button size="sm" variant="secondary" className="w-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400">
-                            <BrainCircuit className="mr-2 h-4 w-4" /> AI
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/review`} className="w-full">
-                          <Button size="sm" variant="secondary" className="w-full bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400">
-                            <Users className="mr-2 h-4 w-4" /> Review
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/validation`} className="w-full">
-                          <Button size="sm" variant="secondary" className="w-full bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400">
-                            <ClipboardCheck className="mr-2 h-4 w-4" /> QA
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/projects/${projectId}/documents/${doc.id}/export`} className="w-full">
-                          <Button size="sm" variant="secondary" className="w-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">
-                            <Download className="mr-2 h-4 w-4" /> Export
-                          </Button>
-                        </Link>
-                      </>
-                    )}
+                  <div>
+                    <div className="font-bold text-sm text-gray-900 dark:text-white">{doc.name}</div>
+                    <div className="text-gray-500 text-[10px] mt-0.5">{doc.filename} • {doc.pages} Pages • Updated {doc.date}</div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    doc.status === "Completed" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" :
+                    doc.status === "Formatting" ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" :
+                    "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                  }`}>
+                    {doc.status}
+                  </span>
+
+                  <Link href="/dashboard/editor">
+                    <button className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center shadow">
+                      <Edit3 className="h-3.5 w-3.5 mr-1" /> Open in Visual Editor
+                    </button>
+                  </Link>
+                </div>
+              </div>
             ))}
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="editor" className="mt-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-gray-100 dark:border-zinc-800">
-              <div>
-                <CardTitle>Interactive Editor</CardTitle>
-                <CardDescription>Manually refine the AI-formatted output.</CardDescription>
-              </div>
-              <Button size="sm">Save Changes</Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <DocumentEditor initialContent="<h1>Chapter 1: Introduction</h1><p>This text was automatically generated by the AI Formatting Engine. You can edit it here before exporting.</p>" />
-            </CardContent>
-          </Card>
-        </TabsContent>
+      {/* Tab 2: Members & Team */}
+      {activeTab === "members" && (
+        <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-3">
+          <h3 className="font-bold text-gray-900 dark:text-white uppercase tracking-wider border-b pb-3 dark:border-zinc-800">
+            Collaborator Team Permissions & Roles
+          </h3>
 
-        <TabsContent value="validation" className="mt-6 space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            {members.map(m => (
+              <div key={m.email} className="p-3.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 flex items-center justify-between">
                 <div>
-                  <CardTitle>AI Validation Score</CardTitle>
-                  <CardDescription>Overall formatting health.</CardDescription>
+                  <div className="font-bold text-gray-900 dark:text-white">{m.name}</div>
+                  <div className="text-gray-500 text-[10px]">{m.email}</div>
                 </div>
-                <div className="text-4xl font-bold text-green-500">{report.score}/100</div>
-              </div>
-            </CardHeader>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Identified Issues</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {report.issues.map((issue, idx) => (
-                  <li key={idx} className="flex items-start bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md text-yellow-800 dark:text-yellow-200 text-sm">
-                    <AlertCircle className="h-5 w-5 mr-2 shrink-0" />
-                    {issue}
-                  </li>
-                ))}
-                {report.issues.length === 0 && (
-                  <li className="flex items-center text-green-600 dark:text-green-400 text-sm">
-                    <CheckCircle2 className="h-5 w-5 mr-2" /> All formatting rules passed successfully.
-                  </li>
-                )}
-              </ul>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="exports" className="mt-6">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <Download className="h-12 w-12 text-gray-300 dark:text-zinc-700 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Ready for Export</h3>
-              <p className="text-gray-500 max-w-sm mt-2 mb-6">
-                Your project is fully formatted. You can export it to various formats including DOCX, PDF, and EPUB.
-              </p>
-              <div className="flex gap-3">
-                <Button>Export as PDF</Button>
-                <Button variant="outline">Export as DOCX</Button>
-                <Button variant="outline">Export as EPUB</Button>
+                <span className="px-2.5 py-1 rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 font-bold text-[10px]">
+                  {m.role}
+                </span>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      <DocumentUploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        projectId={params.id}
+        onUploadSuccess={handleUploadSuccess}
+      />
     </div>
   );
 }

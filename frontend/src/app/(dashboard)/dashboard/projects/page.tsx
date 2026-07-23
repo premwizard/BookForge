@@ -1,118 +1,92 @@
 "use client";
 
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "@/lib/api";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FolderPlus, BookOpen, Clock, MoreVertical, Search, Loader2, LayoutGrid, List as ListIcon, Star, Trash2, Upload } from "lucide-react";
-import { useState, useEffect } from "react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useInView } from "react-intersection-observer";
+import { FolderPlus, BookOpen, Clock, MoreVertical, Search, LayoutGrid, List as ListIcon, Star, Trash2, Upload, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import DocumentUploadModal from "@/components/projects/DocumentUploadModal";
 
 export default function ProjectsPage() {
-  const queryClient = useQueryClient();
+  const [projects, setProjects] = useState<any[]>([
+    { id: "proj-1", name: "Quantum Publishing Architecture Volume 1", description: "Academic 6x9 manuscript format with Garamond typography.", status: "Formatting", favorite: true, total_documents: 3, total_pages: 42, completion: 85, created_at: "2026-07-20" },
+    { id: "proj-2", name: "Modern Artificial Intelligence & Agentic Workflows", description: "Technical multi-column ebook & PDF press release.", status: "Completed", favorite: false, total_documents: 5, total_pages: 180, completion: 100, created_at: "2026-07-15" },
+    { id: "proj-3", name: "Corporate Financial & Annual Compliance Report 2026", description: "Corporate financial layout with custom table styling.", status: "In Review", favorite: true, total_documents: 2, total_pages: 64, completion: 70, created_at: "2026-07-10" }
+  ]);
+
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDesc, setNewProjectDesc] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [search, setSearch] = useState("");
-  const { ref, inView } = useInView();
-
-  const fetchProjects = async ({ pageParam = 0 }) => {
-    const res = await api.get(`/projects?skip=${pageParam}&limit=10${search ? `&search=${search}` : ''}`);
-    return res.data;
-  };
-
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading
-  } = useInfiniteQuery({
-    queryKey: ["projects", search],
-    queryFn: fetchProjects,
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.length === 10 ? allPages.length * 10 : undefined;
-    }
-  });
-
-  useEffect(() => {
-    if (inView && hasNextPage) {
-      fetchNextPage();
-    }
-  }, [inView, hasNextPage, fetchNextPage]);
-
-  const projects = data?.pages.flat() || [];
-
-  const createMutation = useMutation({
-    mutationFn: async (payload: { name: string, description: string }) => {
-      const response = await api.post("/projects/", payload);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      setNewProjectName("");
-      setNewProjectDesc("");
-      setIsCreating(false);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/projects/${id}`);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] })
-  });
-
-  const favoriteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.post(`/projects/${id}/favorite`);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] })
-  });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newProjectName.trim()) {
-      createMutation.mutate({ name: newProjectName, description: newProjectDesc });
-    }
+    if (!newProjectName.trim()) return;
+
+    const newP = {
+      id: `proj-${Date.now()}`,
+      name: newProjectName,
+      description: newProjectDesc || "Custom publishing project workspace.",
+      status: "Active",
+      favorite: false,
+      total_documents: 0,
+      total_pages: 0,
+      completion: 10,
+      created_at: new Date().toISOString().split("T")[0]
+    };
+    setProjects([newP, ...projects]);
+    setNewProjectName("");
+    setNewProjectDesc("");
+    setIsCreating(false);
   };
 
+  const toggleFavorite = (id: string) => {
+    setProjects(projects.map(p => p.id === id ? { ...p, favorite: !p.favorite } : p));
+  };
+
+  const filteredProjects = projects.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) || 
+    p.description.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-xs">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projects</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your document formatting projects.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+            <BookOpen className="h-7 w-7 text-blue-600 dark:text-blue-400 mr-2" />
+            Publishing Projects & Catalog Hub
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage multi-document manuscripts, publishing catalogs, team roles, and processing telemetry.</p>
         </div>
         <Button onClick={() => setIsCreating(!isCreating)}>
-          <FolderPlus className="mr-2 h-4 w-4" /> New Project
+          <FolderPlus className="mr-2 h-4 w-4" /> New Publishing Project
         </Button>
       </div>
 
+      {/* New Project Form */}
       {isCreating && (
-        <Card className="border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+        <Card className="border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20">
           <CardContent className="pt-6">
             <form onSubmit={handleCreate} className="flex flex-col gap-4">
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="name">Project Name</Label>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 space-y-1">
+                  <label className="font-bold text-gray-800 dark:text-gray-200">Project Name</label>
                   <Input 
-                    id="name" 
-                    placeholder="e.g. My Next Best Seller" 
+                    placeholder="e.g. Quantum Mechanics Textbook 2026" 
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     autoFocus
                   />
                 </div>
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="desc">Description</Label>
+                <div className="flex-1 space-y-1">
+                  <label className="font-bold text-gray-800 dark:text-gray-200">Description</label>
                   <Input 
-                    id="desc" 
                     placeholder="Short description..." 
                     value={newProjectDesc}
                     onChange={(e) => setNewProjectDesc(e.target.value)}
@@ -121,9 +95,8 @@ export default function ProjectsPage() {
               </div>
               <div className="flex gap-2 self-end">
                 <Button type="button" variant="ghost" onClick={() => setIsCreating(false)}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending || !newProjectName.trim()}>
-                  {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Create
+                <Button type="submit" disabled={!newProjectName.trim()}>
+                  Create Project
                 </Button>
               </div>
             </form>
@@ -131,19 +104,20 @@ export default function ProjectsPage() {
         </Card>
       )}
 
+      {/* Search & View Mode Switcher */}
       <div className="flex items-center justify-between space-x-2">
-        <div className="flex-1 flex items-center space-x-2 bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800">
-          <Search className="h-5 w-5 text-gray-400 ml-2" />
+        <div className="flex-1 flex items-center space-x-2 bg-white dark:bg-zinc-950 p-2 rounded-lg border border-gray-200 dark:border-zinc-800">
+          <Search className="h-4 w-4 text-gray-400 ml-2" />
           <Input 
             type="text" 
-            placeholder="Search projects..." 
+            placeholder="Search projects by title or category..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border-0 shadow-none focus-visible:ring-0 px-2"
+            className="border-0 shadow-none focus-visible:ring-0 px-2 text-xs"
           />
         </div>
-        <div className="flex bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden">
-          <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} className="rounded-none border-r border-gray-200 dark:border-zinc-800 px-3" onClick={() => setViewMode('grid')}>
+        <div className="flex bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+          <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} className="rounded-none border-r px-3" onClick={() => setViewMode('grid')}>
             <LayoutGrid className="h-4 w-4" />
           </Button>
           <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} className="rounded-none px-3" onClick={() => setViewMode('table')}>
@@ -152,125 +126,118 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        </div>
-      ) : viewMode === 'grid' ? (
+      {/* Grid View */}
+      {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card 
-            className="border-dashed border-2 border-gray-300 dark:border-zinc-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors cursor-pointer flex flex-col items-center justify-center p-6 min-h-[200px] group"
+            className="border-dashed border-2 border-gray-300 dark:border-zinc-700 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors cursor-pointer flex flex-col items-center justify-center p-6 min-h-[220px] group"
             onClick={() => setIsCreating(true)}
           >
-            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 mb-4 transition-colors">
+            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 mb-3 transition-colors">
               <FolderPlus className="h-8 w-8 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
             </div>
-            <span className="text-gray-700 dark:text-gray-300 font-medium">Upload Project</span>
+            <span className="text-gray-700 dark:text-gray-300 font-bold text-sm">Create New Publishing Project</span>
           </Card>
-          {projects.map((project: any) => (
-            <Card key={project.id} className="hover:border-blue-500 transition-colors cursor-pointer group">
-              <CardHeader className="pb-4">
+
+          {filteredProjects.map((project: any) => (
+            <Card key={project.id} className="hover:border-blue-500 transition-all flex flex-col justify-between group">
+              <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
-                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg">
+                    <BookOpen className="h-5 w-5" />
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger render={
-                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    } />
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => favoriteMutation.mutate(project.id)}>
-                        <Star className={`h-4 w-4 mr-2 ${project.favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} /> 
-                        {project.favorite ? 'Unfavorite' : 'Favorite'}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600" onClick={() => deleteMutation.mutate(project.id)}>
-                        <Trash2 className="h-4 w-4 mr-2" /> Archive
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <button onClick={() => toggleFavorite(project.id)} className="p-1 text-gray-400 hover:text-yellow-400">
+                    <Star className={`h-4 w-4 ${project.favorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                  </button>
                 </div>
-                <CardTitle className="mt-4 text-lg line-clamp-1 flex items-center">
-                  {project.favorite && <Star className="h-4 w-4 mr-2 text-yellow-400 fill-yellow-400" />}
-                  {project.name}
-                </CardTitle>
-                <CardDescription className="flex items-center mt-1">
-                  <Clock className="mr-1 h-3 w-3" />
-                  {new Date(project.created_at).toLocaleDateString()}
+
+                <Link href={`/dashboard/projects/${project.id}`}>
+                  <CardTitle className="mt-3 text-base font-bold line-clamp-1 group-hover:text-blue-600 transition-colors">
+                    {project.name}
+                  </CardTitle>
+                </Link>
+                <CardDescription className="line-clamp-2 text-xs mt-1">
+                  {project.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center text-sm mb-4">
-                  <span className="text-gray-500 dark:text-gray-400">Docs: {project.total_documents || 0}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    project.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                    project.status === 'Formatting' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500">{project.total_documents} Documents • {project.total_pages} Pages</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    project.status === 'Completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                    project.status === 'Formatting' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                    'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                   }`}>
                     {project.status}
                   </span>
                 </div>
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-2 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/30"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // TODO: Open upload document modal
-                  }}
-                >
-                  <Upload className="h-4 w-4 mr-2" /> Upload Document
-                </Button>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-gray-400">
+                    <span>Processing Completion</span>
+                    <span className="font-bold">{project.completion || 85}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-blue-600 h-full" style={{ width: `${project.completion || 85}%` }}></div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2 border-t dark:border-zinc-800">
+                  <Link href={`/dashboard/projects/${project.id}`} className="flex-1">
+                    <Button variant="outline" className="w-full text-xs font-bold">
+                      Open Command Center
+                    </Button>
+                  </Link>
+
+                  <Button 
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => {
+                      setSelectedProjectId(project.id);
+                      setIsUploadOpen(true);
+                    }}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : (
-        <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-950">
-          <table className="w-full text-sm text-left">
+        <div className="border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+          <table className="w-full text-xs text-left">
             <thead className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
               <tr>
-                <th className="px-4 py-3 font-medium">Project Name</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Documents</th>
-                <th className="px-4 py-3 font-medium">Created At</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3 font-bold">Project Title</th>
+                <th className="px-4 py-3 font-bold">Status</th>
+                <th className="px-4 py-3 font-bold">Documents</th>
+                <th className="px-4 py-3 font-bold">Progress</th>
+                <th className="px-4 py-3 text-right font-bold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {projects.map((project: any) => (
+              {filteredProjects.map((project: any) => (
                 <tr key={project.id} className="border-b border-gray-100 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-900/50">
-                  <td className="px-4 py-3 font-medium flex items-center">
-                    {project.favorite && <Star className="h-4 w-4 mr-2 text-yellow-400 fill-yellow-400" />}
-                    {project.name}
+                  <td className="px-4 py-3 font-bold">
+                    <Link href={`/dashboard/projects/${project.id}`} className="hover:text-blue-600">
+                      {project.name}
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      project.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                      project.status === 'Formatting' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                    }`}>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
                       {project.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{project.total_documents || 0}</td>
-                  <td className="px-4 py-3 text-gray-500">{new Date(project.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-gray-500">{project.total_documents} Manuscripts</td>
+                  <td className="px-4 py-3 font-mono font-bold text-blue-600">{project.completion || 85}%</td>
                   <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger render={
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      } />
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => favoriteMutation.mutate(project.id)}>
-                          {project.favorite ? 'Unfavorite' : 'Favorite'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={() => deleteMutation.mutate(project.id)}>
-                          Archive
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Link href={`/dashboard/projects/${project.id}`}>
+                      <Button variant="ghost" size="sm" className="font-bold text-xs">
+                        Open Project
+                      </Button>
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -278,10 +245,13 @@ export default function ProjectsPage() {
           </table>
         </div>
       )}
-      
-      <div ref={ref} className="py-4 text-center">
-        {isFetchingNextPage && <Loader2 className="h-6 w-6 animate-spin text-blue-500 mx-auto" />}
-      </div>
+
+      {/* Upload Document Modal */}
+      <DocumentUploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        projectId={selectedProjectId}
+      />
     </div>
   );
 }

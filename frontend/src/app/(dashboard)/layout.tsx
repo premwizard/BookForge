@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-import { BookOpen, FolderOpen, LayoutDashboard, Settings, LogOut, FileText } from "lucide-react";
+import { BookOpen, FolderOpen, LayoutDashboard, Settings, LogOut, FileText, Workflow, Edit3, Download, Sparkles } from "lucide-react";
 import { useEffect } from "react";
 
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/projects", label: "Projects", icon: FolderOpen },
+  { href: "/dashboard/editor", label: "Visual Editor", icon: Edit3 },
+  { href: "/dashboard/export", label: "Export & Releases", icon: Download },
+  { href: "/dashboard/ai", label: "AI Copilot", icon: Sparkles },
+  { href: "/dashboard/workflows", label: "Workflows", icon: Workflow },
   { href: "/dashboard/templates", label: "Templates", icon: FileText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];

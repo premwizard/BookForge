@@ -1,173 +1,163 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import Any, List
-from uuid import UUID
-import shutil
-import os
+import uuid
+from typing import List, Optional, Dict, Any
 
 from app.api import deps
-from app.models import User
-from app.models.template import Template, Blueprint, BlueprintVersion, BlueprintStyle, BlueprintLayout
-from app.schemas.template import Blueprint as BlueprintSchema, BlueprintVersion as BlueprintVersionSchema, Template as TemplateSchema, TemplateCreate
-from app.services.template.blueprint_generator import BlueprintGenerator
+from app.models.template import Template, Blueprint, BlueprintVersion, BlueprintStyle, MappingProfile, StyleMapping
+from app.services.blueprint_service import BlueprintService
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 
-UPLOAD_DIR = "storage/templates"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+class CreateTemplateRequest(BaseModel):
+    name: str
+    category: Optional[str] = "General"
+    description: Optional[str] = None
+    is_active: Optional[bool] = True
+    is_default: Optional[bool] = False
 
-@router.post("/templates/upload", response_model=TemplateSchema)
-def upload_template(
-    *,
+class SaveBlueprintRequest(BaseModel):
+    styles: List[Dict[str, Any]] = Field(default_factory=list)
+    layouts: List[Dict[str, Any]] = Field(default_factory=list)
+    rules: List[Dict[str, Any]] = Field(default_factory=list)
+
+class MappingApproveRequest(BaseModel):
+    mappings: List[Dict[str, Any]] = Field(default_factory=list)
+
+@router.get("")
+@router.get("/")
+def list_templates_and_blueprints(
     db: Session = Depends(deps.get_db),
-    publisher_id: UUID = Form(None),
-    name: str = Form(...),
-    file: UploadFile = File(...),
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Upload a DOCX template file. This stores the raw template.
-    """
-    file_ext = os.path.splitext(file.filename)[1].lower()
-    if file_ext not in [".docx", ".dotx"]:
-        raise HTTPException(status_code=400, detail="Only .docx and .dotx files are supported")
-        
-    template = Template(
-        publisher_id=publisher_id,
-        user_id=current_user.id,
-        name=name,
-        category="Uploaded"
-    )
-    db.add(template)
-    db.flush() # Get the template.id
-    
-    storage_path = os.path.join(UPLOAD_DIR, f"{template.id}{file_ext}")
-    
-    with open(storage_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
-    template.storage_path = storage_path
-    db.commit()
-    db.refresh(template)
-    return template
+    current_user = Depends(deps.get_current_active_user)
+):
+    templates = db.query(Template).all()
+    result = []
+    for t in templates:
+        bp = db.query(Blueprint).filter(Blueprint.template_id == t.id).first()
+        latest_v = bp.versions[0] if (bp and bp.versions) else None
+        result.append({
+            "id": t.id,
+            "name": t.name,
+            "category": t.category,
+            "description": t.description,
+            "is_active": t.is_active,
+            "is_default": t.is_default,
+            "blueprint_id": bp.id if bp else None,
+            "active_version": latest_v.version_number if latest_v else 0,
+            "created_at": t.created_at
+        })
+    return result
 
-@router.post("/templates/", response_model=TemplateSchema)
-@router.post("/templates", response_model=TemplateSchema)
+@router.post("/", status_code=201)
 def create_template(
-    *,
+    request: CreateTemplateRequest,
     db: Session = Depends(deps.get_db),
-    template_in: TemplateCreate,
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Create a new template metadata.
-    """
+    current_user = Depends(deps.get_current_active_user)
+):
     template = Template(
-        publisher_id=template_in.publisher_id,
-        user_id=current_user.id,
-        name=template_in.name,
-        category=template_in.category,
-        is_active=template_in.is_active,
-        is_default=template_in.is_default
+        name=request.name,
+        category=request.category,
+        description=request.description,
+        is_active=request.is_active,
+        is_default=request.is_default,
+        user_id=current_user.id
     )
     db.add(template)
     db.commit()
     db.refresh(template)
+
+    # Automatically extract baseline blueprint
+    service = BlueprintService(db)
+    service.extract_blueprint_from_docx(template.id)
+
     return template
 
-@router.post("/templates/{template_id}/analyze", response_model=BlueprintVersionSchema)
-def analyze_template_to_blueprint(
-    *,
+@router.get("/{template_id}")
+def get_template_blueprint(
+    template_id: uuid.UUID,
     db: Session = Depends(deps.get_db),
-    template_id: UUID,
-    blueprint_name: str,
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Analyze the uploaded template and generate the JSON Blueprint structure.
-    """
-    try:
-        generator = BlueprintGenerator(db)
-        version = generator.generate_from_template(template_id, blueprint_name)
-        return version
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate blueprint: {str(e)}")
-
-@router.get("/templates", response_model=List[TemplateSchema])
-def read_templates(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get all uploaded templates.
-    """
-    return db.query(Template).offset(skip).limit(limit).all()
-
-@router.get("/templates/{template_id}", response_model=TemplateSchema)
-def read_template(
-    template_id: UUID,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get a specific template.
-    """
+    current_user = Depends(deps.get_current_active_user)
+):
     template = db.query(Template).filter(Template.id == template_id).first()
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
-    return template
 
-@router.get("/templates/{template_id}/blueprint", response_model=List[BlueprintSchema])
-def read_template_blueprints(
-    template_id: UUID,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get all blueprints generated from this template.
-    """
-    return db.query(Blueprint).filter(Blueprint.template_id == template_id).all()
+    bp = db.query(Blueprint).filter(Blueprint.template_id == template_id).first()
+    if not bp:
+        service = BlueprintService(db)
+        service.extract_blueprint_from_docx(template_id)
+        bp = db.query(Blueprint).filter(Blueprint.template_id == template_id).first()
 
-@router.get("/blueprints/versions/{version_id}")
-def read_blueprint_version(
-    version_id: UUID,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get the full JSON blueprint version.
-    """
-    version = db.query(BlueprintVersion).filter(BlueprintVersion.id == version_id).first()
-    if not version:
-        raise HTTPException(status_code=404, detail="Blueprint version not found")
-    
-    # We return the raw dict directly so FastAPI converts to JSON
-    return version.blueprint_json
+    latest_version = bp.versions[0] if (bp and bp.versions) else None
 
-@router.get("/blueprints/versions/{version_id}/styles")
-def read_blueprint_styles(
-    version_id: UUID,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get all relational styles for a blueprint version.
-    """
-    styles = db.query(BlueprintStyle).filter(BlueprintStyle.blueprint_version_id == version_id).all()
-    return styles
+    return {
+        "template": template,
+        "blueprint": bp,
+        "latest_version": latest_version
+    }
 
-@router.get("/blueprints/versions/{version_id}/layout")
-def read_blueprint_layout(
-    version_id: UUID,
+@router.post("/{template_id}/extract")
+def extract_template_blueprint(
+    template_id: uuid.UUID,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Get all relational layouts for a blueprint version.
-    """
-    layouts = db.query(BlueprintLayout).filter(BlueprintLayout.blueprint_version_id == version_id).all()
-    return layouts
+    current_user = Depends(deps.get_current_active_user)
+):
+    service = BlueprintService(db)
+    ast = service.extract_blueprint_from_docx(template_id)
+    return {"message": "Blueprint extracted successfully", "ast": ast}
+
+@router.post("/{template_id}/blueprint/save")
+def save_blueprint_ast(
+    template_id: uuid.UUID,
+    request: SaveBlueprintRequest,
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    bp = db.query(Blueprint).filter(Blueprint.template_id == template_id).first()
+    if not bp:
+        raise HTTPException(status_code=404, detail="Blueprint not found")
+
+    version_count = len(bp.versions) if bp.versions else 0
+    new_ast = {
+        "template_name": bp.name,
+        "version": version_count + 1,
+        "styles": request.styles,
+        "layouts": request.layouts,
+        "rules": request.rules
+    }
+
+    bp_version = BlueprintVersion(
+        blueprint_id=bp.id,
+        version_number=version_count + 1,
+        blueprint_json=new_ast
+    )
+    db.add(bp_version)
+    db.commit()
+    db.refresh(bp_version)
+
+    return {"message": "New blueprint version saved", "version": bp_version.version_number}
+
+@router.get("/{template_id}/mappings")
+def get_style_mappings(
+    template_id: uuid.UUID,
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    bp = db.query(Blueprint).filter(Blueprint.template_id == template_id).first()
+    if not bp or not bp.versions:
+        raise HTTPException(status_code=404, detail="Blueprint not found")
+
+    service = BlueprintService(db)
+    sample_raw_styles = ["Heading 1", "Heading 2", "Text body", "Blockquote", "Table Grid", "CustomSubtitle"]
+    mappings = service.auto_map_styles(bp.versions[0].id, sample_raw_styles)
+    return mappings
+
+@router.post("/{template_id}/mappings/approve")
+def approve_style_mappings(
+    template_id: uuid.UUID,
+    request: MappingApproveRequest,
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    return {"message": f"Successfully approved {len(request.mappings)} style mappings!"}

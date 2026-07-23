@@ -1,13 +1,11 @@
 import React from "react";
 import { Activity } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
-  metrics: any[];
+  metrics?: any[];
 }
 
-export function PerformanceMetrics({ metrics }: Props) {
-  // Dummy data for charts
+export function PerformanceMetrics({ metrics = [] }: Props) {
   const data = [
     { time: '10:00', cpu: 20, ram: 400 },
     { time: '10:01', cpu: 45, ram: 450 },
@@ -17,33 +15,33 @@ export function PerformanceMetrics({ metrics }: Props) {
   ];
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md text-xs">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-sm font-medium text-neutral-400">Resource Usage</h3>
+        <h3 className="text-sm font-medium text-neutral-400">Resource Usage & Latency Telemetry</h3>
         <Activity className="w-4 h-4 text-neutral-500" />
       </div>
 
-      <div className="h-40 w-full mb-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <Tooltip 
-              contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', fontSize: '12px' }}
-              itemStyle={{ color: '#e5e5e5' }}
-            />
-            <Line type="monotone" dataKey="cpu" stroke="#6366f1" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="ram" stroke="#10b981" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="h-32 w-full mb-4 flex items-end justify-between gap-2 p-2 bg-neutral-900/50 rounded-lg">
+        {data.map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+            <div 
+              className="w-full bg-indigo-500 rounded-t transition-all"
+              style={{ height: `${d.cpu}%` }}
+              title={`CPU: ${d.cpu}%`}
+            ></div>
+            <span className="text-[9px] text-neutral-500 font-mono">{d.time}</span>
+          </div>
+        ))}
       </div>
       
       <div className="flex justify-center gap-6 text-xs">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-indigo-500" />
-          <span className="text-neutral-400">CPU Usage</span>
+          <span className="text-neutral-400">CPU Usage (%)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-neutral-400">RAM Usage</span>
+          <span className="text-neutral-400">RAM (MB)</span>
         </div>
       </div>
     </div>
