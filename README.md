@@ -1,5 +1,7 @@
 # 📚 DocForge
 
+![DocForge Banner](assets/banner.png)
+
 > AI-powered enterprise document formatting and publishing platform.
 
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python)
